@@ -41,24 +41,29 @@ interface IPoolManager is IExtsload, IExttload {
     /// @notice Thrown when `clear` is called with an amount that is not exactly equal to the open currency delta.
     error MustClearExactPositiveDelta();
 
+    // Pass PoolKey struct to identify the pool 
     function unlock(bytes calldata data) external returns (bytes memory);
 
+    // initialize a pool with given PoolKey and starting sqrtPriceX96
     function initialize(PoolKey memory key, uint160 sqrtPriceX96)
         external
         returns (int24 tick);
 
+    // modify liquidity in a pool identified by PoolKey with given ModifyLiquidityParams
     function modifyLiquidity(
         PoolKey memory key,
         ModifyLiquidityParams memory params,
         bytes calldata hookData
     ) external returns (int256 callerDelta, int256 feesAccrued);
 
+    // swap currencies in a pool identified by PoolKey with given SwapParams
     function swap(
         PoolKey memory key,
         SwapParams memory params,
         bytes calldata hookData
     ) external returns (int256 swapDelta);
 
+    // donate liquidity to a pool identified by PoolKey
     function donate(
         PoolKey memory key,
         uint256 amount0,
@@ -66,12 +71,18 @@ interface IPoolManager is IExtsload, IExttload {
         bytes calldata hookData
     ) external returns (int256);
 
-    function sync(address currency) external;
+    // sync is used to update the pool manager's internal accounting of currency deltas for a given currency.
+    function sync(address currency) external; 
 
+    // take allows the caller to withdraw currency from the pool manager, increasing their negative delta.
     function take(address currency, address to, uint256 amount) external;
 
+    // settle is a mechanism to ensure that after an unlock, all currency deltas are netted out.
+    // If there is a positive delta for any currency, that currency must be paid to the pool manager before
+    // further interactions can occur. If there is a negative delta for any currency, the pool manager will pay that amount to the caller.
     function settle() external payable returns (uint256 paid);
 
+    // settleFor is similar to settle, but allows specifying a recipient for any currency paid out by the pool manager.
     function settleFor(address recipient)
         external
         payable
